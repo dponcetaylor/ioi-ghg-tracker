@@ -1,0 +1,74 @@
+{
+  "participants": [
+    {
+      "id": "pt1",
+      "category": "individual",
+      "name": "Lisa Well",
+      "bookingSource": "direct",
+      "agencyName": null,
+      "institution": null,
+      "accommodationType": "homestay",
+      "arrivalDate": "2026-01-06",
+      "departureDate": "2026-01-27",
+      "mainlandGateway": "UIO",
+      "localTransportOverride": null,
+      "source": "mock-embark"
+    },
+    {
+      "id": "pt2",
+      "category": "individual",
+      "name": "Gary Sinclair",
+      "bookingSource": "agency",
+      "agencyName": "IVHQ",
+      "institution": null,
+      "accommodationType": "hotel",
+      "arrivalDate": "2026-02-10",
+      "departureDate": "2026-02-24",
+      "mainlandGateway": "GYE",
+      "localTransportOverride": null,
+      "source": "mock-embark"
+    },
+    {
+      "id": "pt3",
+      "category": "group",
+      "name": "Sirine Chebbi",
+      "bookingSource": null,
+      "agencyName": null,
+      "institution": "University of Michigan",
+      "accommodationType": "volunteer_house",
+      "arrivalDate": "2026-03-03",
+      "departureDate": "2026-03-17",
+      "mainlandGateway": "UIO",
+      "localTransportOverride": null,
+      "source": "mock-embark"
+    },
+    {
+      "id": "pt4",
+      "category": "faculty",
+      "name": "Dr. Elke Richter",
+      "bookingSource": null,
+      "agencyName": null,
+      "institution": "University of Michigan",
+      "accommodationType": "hotel",
+      "arrivalDate": "2026-03-03",
+      "departureDate": "2026-03-17",
+      "mainlandGateway": "UIO",
+      "localTransportOverride": null,
+      "source": "mock-embark"
+    }
+  ],
+  "staff": [
+    {
+      "id": "s1",
+      "name": "Daniel Poncetaylor"
+    },
+    {
+      "id": "s2",
+      "name": "Maria Fernandez"
+    }
+  ],
+  "flights": [],
+  "nights": [],
+  "localTransportEntries": [],
+  "groundStaffEntries": []
+}

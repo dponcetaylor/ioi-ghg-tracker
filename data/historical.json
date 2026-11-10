@@ -1,0 +1,101 @@
+{
+ "2024": {
+  "year": 2024,
+  "source": "Calculadora GEI para IOI 2024 (1).xlsx",
+  "finalized": true,
+  "lines": {
+   "participantFlights": 650.686095,
+   "teamFlights": 0.011181,
+   "hotelNights": 24.885105,
+   "homestayNights": 0,
+   "meals": 0.070368,
+   "agriTransport": 0.499823,
+   "localTransport": 8.84296,
+   "utilities": 5.195511,
+   "staffTravelOther": 0.197792,
+   "shipping": 0.020205,
+   "waste": 0.200724
+  },
+  "mitigationByType": {
+   "milk": 32.0397,
+   "beef": 0.798,
+   "tomato": 0.165078,
+   "pepper": 0.083682,
+   "cucumber": 0.017761,
+   "cilantro": 0.007981,
+   "regenerative_ag": 74.97,
+   "beach_cleanup": 0.009686,
+   "bicycle": 0.00504,
+   "reforested": 0.0
+  },
+  "mitigationTotal": 108.096927,
+  "workbookGross": 690.412772,
+  "scope1": 0.6899,
+  "scope2": 4.7146,
+  "scope3": 685.0083,
+  "nights": {
+   "hotel": 4781.0,
+   "homestay": null
+  },
+  "regenHectares": 83.3,
+  "reported": {
+   "participants": 298,
+   "participantWeeks": 1134,
+   "gross": 690.61,
+   "net": 582.51,
+   "mitigation": 108.1,
+   "regenHa": 83.3
+  },
+  "adjustmentToPublishedGross": 0.0002
+ },
+ "2025": {
+  "year": 2025,
+  "source": "Calculadora GEI para IOI 2025.xlsx",
+  "finalized": true,
+  "lines": {
+   "participantFlights": 785.598161,
+   "teamFlights": 11.358999,
+   "hotelNights": 9.60843,
+   "homestayNights": 10.622345,
+   "meals": 0.069258,
+   "agriTransport": 0.857805,
+   "localTransport": 13.88017,
+   "utilities": 5.516438,
+   "staffTravelOther": 0.160056,
+   "shipping": 0.092217,
+   "waste": 0.108024
+  },
+  "mitigationByType": {
+   "milk": 32.0397,
+   "beef": 0.0,
+   "tomato": 0.200411,
+   "pepper": 0.236778,
+   "cucumber": 0.089946,
+   "cilantro": 0.382242,
+   "plantain": 1.242429,
+   "regenerative_ag": 94.99086,
+   "beach_cleanup": 0.011366,
+   "bicycle": 0.00504,
+   "reforested": 0.0
+  },
+  "mitigationTotal": 129.198772,
+  "workbookGross": 837.711848,
+  "scope1": 11.9504,
+  "scope2": 5.0851,
+  "scope3": 820.6764,
+  "nights": {
+   "hotel": 1846.0,
+   "homestay": 6954.0
+  },
+  "regenHectares": 105.5454,
+  "reported": {
+   "participants": 434,
+   "participantWeeks": 1296,
+   "gross": 837.71,
+   "net": 708.51,
+   "mitigation": 129.2,
+   "regenHa": 105.5
+  },
+  "adjustmentToPublishedGross": -0.1619
+ }
+}

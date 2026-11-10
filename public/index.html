@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IOI GHG Tracker — Staff Tool</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">IOI GHG Tracker </div>
+  <nav>
+    <button class="navbtn active" data-tab="welcome">Welcome</button>
+    <button class="navbtn" data-tab="participants">Participants</button>
+    <button class="navbtn" data-tab="staff">IOI Staff</button>
+    <button class="navbtn" data-tab="groundstaff">Emissions & Mitigation Monthly</button>
+    <button class="navbtn" data-tab="report">Report</button>
+    <button class="navbtn" data-tab="admin" id="admin-nav" style="display:none;">Admin</button>
+    <span class="userbox"><span id="who"></span> <button class="navbtn" id="logout-btn">Log out</button></span>
+  </nav>
+</header>
+
+<main>
+
+  <!-- WELCOME -->
+  <section id="tab-welcome" class="tab active">
+    <h1>Welcome to the IOI GHG Tracker</h1>
+    <p class="hint">This tool replaces our manual emissions spreadsheet. You enter what happened; it does the calculations and feeds the annual GHG report. This page tells you what to do and when.</p>
+
+    <div class="card">
+      <h2>Where to start</h2>
+      <div class="welcome-grid">
+        <div class="welcome-item"><strong>Participants</strong><p>Faculty &amp; Leaders, Groups and Individuals. Flights, local transport and nights are generated automatically from their dates. <em>You only check them and fix exceptions.</em></p></div>
+        <div class="welcome-item"><strong>IOI Staff</strong><p>Enter staff flights (with the reason for travel), hotel nights and local transport in Galápagos. Staff are not in Embark, so everything here is manual.</p></div>
+        <div class="welcome-item"><strong>Emissions &amp; Mitigation Monthly</strong><p>Once a month: utilities, water, gas, waste, and mitigation (harvests, regenerative agriculture, mangrove nursery, beach clean-up).</p></div>
+        <div class="welcome-item"><strong>Report</strong><p>Live totals: gross, controllable and net emissions, per-week figures and charts. Nothing to enter here.</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Monthly routine (ground staff)</h2>
+      <ol class="welcome-steps">
+        <li>Open <strong>Emissions &amp; Mitigation Monthly</strong>.</li>
+        <li>Select the month and year in the <strong>Monthly checklist</strong>. ✅ means already entered, ❌ means still missing.</li>
+        <li>Enter each missing item using the form below the checklist (use the units shown beside each field).</li>
+        <li>Check the checklist again: everything should be green before you finish.</li>
+        <li>Made a mistake? Edit the amount in the entries table and click <strong>Save</strong>, or click <strong>Remove</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Checking participants</h2>
+      <ol class="welcome-steps">
+        <li>Open <strong>Participants</strong>; use the search box or category filter to find someone, then click their name to expand.</li>
+        <li>Review flights, local transport and nights. Anything automatic is labelled “(auto)”.</li>
+        <li>For exceptions (a group with different logistics, someone who skipped a leg), click <strong>Remove</strong> on that line or add what is missing: <strong>Add flight manually</strong> or <strong>Add nights</strong>.</li>
+        <li>To change a number of nights, click <strong>Edit</strong>, change the figure, then click <strong>Save</strong>. If you do not click Save, nothing changes.</li>
+        <li>If you see an amber <strong>needs review</strong> tag, the person's dates changed in Embark after the figures were calculated. Check them, or click <strong>Regenerate from new dates</strong> (this discards manual edits for that person).</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Good to know</h2>
+      <ul class="welcome-steps">
+        <li><strong>Always edit here, not in a spreadsheet.</strong> Any spreadsheet export is a snapshot only.</li>
+        <li><strong>Mainland ↔ Baltra flights</strong> are assumed for every participant and are always counted at the medium emissions tier.</li>
+        <li><strong>Local transport</strong> is already a round trip. Do not enter the return separately.</li>
+        <li><strong>Nights</strong> come from arrival/departure dates. Mainland and Galápagos nights use the same hotel factor but are kept as separate records.</li>
+        <li><strong>Controllable emissions</strong> = gross emissions minus participant flights. Staff and international flights count as controllable.</li>
+        <li><strong>Participants come from Embark</strong> (imported by the admin); if someone is missing, use “Add a participant manually”.</li>
+        <li>Unsure about something? Ask Daniel (daniel@ioi.ngo) before changing it.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- PARTICIPANTS (Faculty & Leaders / Groups / Individuals) — sourced from Embark -->
+  <section id="tab-participants" class="tab">
+    <h1>Participants</h1>
+    <p class="hint">Faculty & Leaders, Groups, and Individuals are pulled from Embark (sample records shown here). Everyone automatically gets a mainland↔Baltra flight, the local-transport chain, and nights calculated from their dates (Faculty & Groups get 1 mainland night; Individuals are all in Galápagos) — all individually editable/removable for exceptions.</p>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="row" style="align-items:flex-end;">
+        <label style="flex:2;">Search<input id="participant-search" placeholder="Name, institution, agency..." /></label>
+        <label>Year<select id="participant-year"></select></label>
+        <label>Category<select id="participant-filter">
+          <option value="">All</option>
+          <option value="faculty">Faculty & Leaders</option>
+          <option value="group">Groups</option>
+          <option value="individual">Individuals</option>
+        </select></label>
+        <button type="button" id="expand-all-btn" class="btn small">Expand all</button>
+      </div>
+      <p class="hint" id="participant-count" style="margin:8px 0 0;"></p>
+    </div>
+
+    <details class="card" style="margin-bottom:16px;">
+      <summary>+ Add a participant manually (backup if they are not in Embark)</summary>
+      <form id="np-form" class="small-form" style="margin-top:12px;">
+        <label>Full name<input id="np-name" required /></label>
+        <label>Category<select id="np-category"><option value="individual">Individual</option><option value="group">Group</option><option value="faculty">Faculty &amp; Leader</option></select></label>
+        <label id="np-inst-wrap">Institution<input id="np-institution" placeholder="e.g. University of Michigan" /></label>
+        <label id="np-agency-wrap">Booked via<select id="np-agency"></select></label>
+        <label>Accommodation<select id="np-acc"><option value="homestay">Homestay</option><option value="volunteer_house">Volunteer house</option><option value="hotel">Hotel</option></select></label>
+        <label>Arrival<input id="np-arrival" type="date" required /></label>
+        <label>Departure<input id="np-departure" type="date" required /></label>
+        <label>Mainland airport<select id="np-gateway"><option value="UIO">Quito (UIO)</option><option value="GYE">Guayaquil (GYE)</option></select></label>
+        <button type="submit" class="btn small">Add participant</button>
+      </form>
+      <div id="np-msg" class="result"></div>
+    </details>
+
+    <div id="participants-list"></div>
+  </section>
+
+  <!-- IOI STAFF -->
+  <section id="tab-staff" class="tab">
+    <h1>IOI Staff travel</h1>
+    <p class="hint">Entered manually — staff aren't in Embark. Flights, hotel nights, and local transport in Galápagos.</p>
+
+    <form id="form-staff-flight" class="card">
+      <h2>Flight</h2>
+      <div class="row">
+        <label>Staff member<select id="sf-staff" required></select></label>
+        <label>Reason for travel<select id="sf-reason"></select></label>
+      </div>
+      <div class="row">
+        <label>Origin airport<input id="sf-origin" list="sf-origin-list" placeholder="e.g. GPS or Baltra" autocomplete="off" required /><datalist id="sf-origin-list"></datalist></label>
+        <label>Destination airport<input id="sf-dest" list="sf-dest-list" placeholder="e.g. MAD or Madrid" autocomplete="off" required /><datalist id="sf-dest-list"></datalist></label>
+      </div>
+      <div class="row">
+        <label>Date<input id="sf-date" type="date" /></label>
+        <label>Passengers<input id="sf-passengers" type="number" min="1" value="1" /></label>
+      </div>
+      <button type="submit">Add flight</button>
+    </form>
+
+    <form id="form-staff-hotel" class="card">
+      <h2>Hotel stay</h2>
+      <div class="row">
+        <label>Staff member<select id="sh-staff" required></select></label>
+        <label>Nights<input id="sh-nights" type="number" min="1" required /></label>
+        <label>Date<input id="sh-date" type="date" /></label>
+      </div>
+      <button type="submit">Add hotel stay</button>
+    </form>
+
+    <form id="form-staff-local" class="card">
+      <h2>Local transport (Galápagos)</h2>
+      <div class="row">
+        <label>Staff member<select id="sl-staff" required></select></label>
+        <label>Leg<select id="sl-leg"></select></label>
+        <label>One-way trips<input id="sl-amount" type="number" min="1" value="1" /></label>
+      </div>
+      <button type="submit">Add local transport</button>
+    </form>
+
+    <div id="sf-result" class="result"></div>
+  </section>
+
+  <!-- EMISSIONS & MITIGATION MONTHLY -->
+  <section id="tab-groundstaff" class="tab">
+    <h1>Emissions & Mitigation Monthly</h1>
+    <p class="hint">Meter readings, waste weights, and mitigation figures — reminder-driven, once per month.</p>
+
+    <div class="card">
+      <h2>Monthly checklist</h2>
+      <div class="row">
+        <label>Month<select id="cl-month"></select></label>
+        <label>Year<input id="cl-year" type="number" value="2026" /></label>
+      </div>
+      <div id="checklist-content"></div>
+    </div>
+
+    <form id="form-groundstaff" class="card">
+      <h2>Add entry</h2>
+      <div class="row">
+        <label>Month<select id="gs-month"></select></label>
+        <label>Year<input id="gs-year" type="number" value="2026" /></label>
+      </div>
+      <div class="row">
+        <label>Category<select id="gs-category">
+          <optgroup label="Utilities" id="gs-utility-group"></optgroup>
+          <optgroup label="Waste" id="gs-waste-group"></optgroup>
+          <optgroup label="Mitigation" id="gs-mitigation-group"></optgroup>
+        </select></label>
+        <label>Amount <span id="gs-unit-label" class="unit"></span><input id="gs-amount" type="number" step="any" min="0" required /></label>
+      </div>
+      <button type="submit">Save monthly entry</button>
+    </form>
+
+    <div id="gs-result" class="result"></div>
+    <h2>Entries this session</h2>
+    <div id="gs-table"></div>
+  </section>
+
+  <!-- REPORT -->
+  <section id="tab-report" class="tab">
+    <h1>Report</h1>
+    <p class="hint">Gross, controllable (excl. participant flights), and net-of-mitigation totals — plus weeks and per-week emissions by category.</p>
+    <div class="row" style="align-items:flex-end;"><label style="max-width:160px;">Year<select id="report-year"></select></label><button id="refresh-report">Refresh</button></div>
+    <div id="report-content"></div>
+    <h2 style="margin-top:28px;">Year-over-year comparison</h2>
+    <div id="report-compare"></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="tab-admin" class="tab">
+    <h1>Admin</h1>
+    <p class="hint">Create staff accounts, reset passwords, review who changed what, and download a backup.</p>
+    <div class="card">
+      <h2>Staff accounts</h2>
+      <div id="users-table"></div>
+      <h3>Add a person</h3>
+      <form id="user-form" class="small-form">
+        <label>Username<input id="nu-username" required /></label>
+        <label>Full name<input id="nu-name" required /></label>
+        <label>Password (8+ chars)<input id="nu-pw" type="text" required /></label>
+        <label>Role<select id="nu-role"><option value="staff">Staff</option><option value="admin">Admin</option></select></label>
+        <button type="submit" class="btn small">Create account</button>
+      </form>
+      <div id="user-msg" class="result"></div>
+    </div>
+    <div class="card">
+      <h2>Embark connection</h2>
+      <div id="embark-status"></div>
+      <p class="hint"><strong>Import now:</strong> in Embark, export your participants report as CSV and choose the file here. You get a preview first; nothing changes until you click Apply. Re-importing is safe: people are matched, updated, and never duplicated. Columns are recognised by name (name, category, institution/group, arrival/start date, departure/end date, housing, agency/booking source, flights as e.g. <em>MAD&gt;UIO; UIO&gt;MAD</em>).</p>
+      <div class="row" style="align-items:flex-end;">
+        <label style="flex:0 0 auto;min-width:0;"><span><input type="checkbox" id="embark-submitted" checked style="width:auto;" /> Submitted applications only</span></label>
+        <label style="max-width:150px;">Only programs starting in or after (2024–2025 are final)<input type="number" id="embark-fromyear" value="2026" /></label>
+      </div>
+      <input type="file" id="embark-file" accept=".csv,text/csv" />
+      <div id="embark-result" class="result"></div>
+      <p class="hint"><strong>Automatic sync:</strong> once Embark gives us API access, it is switched on in Render with the settings listed in DEPLOY.md, and the app then refreshes itself every hour.</p>
+      <button type="button" class="btn small" id="embark-sync-btn">Sync from Embark API now</button>
+    </div>
+    <div class="card">
+      <h2>Lists &amp; rules</h2>
+      <form id="settings-form">
+        <div class="row">
+          <label>IOI staff (one per line)<textarea id="set-staff" rows="9"></textarea></label>
+          <label>Recruiting agencies (one per line)<textarea id="set-agencies" rows="9"></textarea></label>
+          <label>Groups that always use homestays (one per line; matches any part of the institution name)<textarea id="set-homestay" rows="9"></textarea></label>
+        </div>
+        <button type="submit" class="btn small">Save lists</button>
+      </form>
+      <div id="settings-msg" class="result"></div>
+      <p class="hint">The homestay rule applies when a group's nights are first generated (or regenerated).</p>
+      <button type="button" class="btn small danger" id="clear-sample-btn">Remove sample participants</button>
+    </div>
+    <div class="card">
+      <h2>Backup</h2>
+      <p class="hint">Download all data as a file. Do this regularly (e.g. monthly) and keep it somewhere safe.</p>
+      <a class="btn" href="/api/admin/backup">Download backup</a>
+    </div>
+    <div class="card">
+      <h2>Recent activity</h2>
+      <div id="audit-table"></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
