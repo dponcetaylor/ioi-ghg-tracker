@@ -500,7 +500,7 @@ app.post("/api/ground-staff-entries", (req, res) => {
     const amt = Number(amount);
     let value, unit, isMitigation = false;
 
-    if (category === "utility") { value = calc.calcUtility(subtype, amt); unit = UTILITIES[subtype]?.unit; }
+    if (category === "utility") { value = calc.calcUtility(subtype, amt, Number(year)); unit = UTILITIES[subtype]?.unit; }
     else if (category === "waste") { value = calc.calcWaste(subtype, amt); unit = WASTE[subtype]?.unit; }
     else if (category === "mitigation") { value = calc.calcMitigation(subtype, amt); unit = MITIGATION[subtype]?.unit; isMitigation = true; }
     else return res.status(400).json({ error: "category must be 'utility', 'waste', or 'mitigation'" });
@@ -528,7 +528,7 @@ app.patch("/api/ground-staff-entries/:id", (req, res) => {
     if (!record) return res.status(404).json({ error: "not found" });
     const amt = Number(req.body.amount);
     let value;
-    if (record.category === "utility") value = calc.calcUtility(record.subtype, amt);
+    if (record.category === "utility") value = calc.calcUtility(record.subtype, amt, record.year);
     else if (record.category === "waste") value = calc.calcWaste(record.subtype, amt);
     else value = calc.calcMitigation(record.subtype, amt);
     record.amount = amt;
@@ -717,7 +717,7 @@ app.get("/api/report/compare", (req, res) => {
       gross: t.grossTonsCO2e, controllable: t.controllableTonsCO2e, mitigation: t.mitigationTonsCO2e, net: t.netAfterMitigationTonsCO2e,
       grossPerWeek: r.participantWeeks.grossPerWeek, controllablePerWeek: r.participantWeeks.controllablePerWeek,
       participantFlights: t.participantFlights, nights: t.nights, utilities: t.utilities,
-      finalized: !!r.finalized, controllableExAllFlightsPerWeek: r.participantWeeks.controllableExAllFlightsPerWeek ?? null };
+      electricityFactor: require("./data/factors").electricityFactor(y), finalized: !!r.finalized, controllableExAllFlightsPerWeek: r.participantWeeks.controllableExAllFlightsPerWeek ?? null };
   }));
 });
 

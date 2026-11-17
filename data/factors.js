@@ -108,6 +108,8 @@ const STAFF_TRAVEL_REASONS = ["Ecuador admin", "Conference", "Site visit", "Emer
 
 // ---- Utilities (ground staff monthly) ----
 const UTILITIES = {
+  // Grid factor (kg CO2e/kWh) by reporting year. Up to 2025: 0.32 (as published in the 2024 and 2025 reports).
+  // From 2026: 0.9866 (CENACE / Ministerio del Ambiente, residential-equivalent factor). Compare years with an asterisk.
   electricity_office: { co2PerKwh: 0.32, unit: "kWh", sourceRow: 23 },
   electricity_house: { co2PerKwh: 0.32, unit: "kWh", sourceRow: 24 },
   electricity_laundry: { co2PerKwh: 0.32, unit: "kWh", sourceRow: 25 },
@@ -175,3 +177,8 @@ module.exports = {
   OFFSET_USD_PER_TON,
   VOLUNTARY_CONTRIBUTION_USD_PER_WEEK,
 };
+
+const ELECTRICITY_FACTOR_BY_YEAR = { until2025: 0.32, from2026: 0.9866, switchYear: 2026 };
+function electricityFactor(year) { return Number(year) >= ELECTRICITY_FACTOR_BY_YEAR.switchYear ? ELECTRICITY_FACTOR_BY_YEAR.from2026 : ELECTRICITY_FACTOR_BY_YEAR.until2025; }
+module.exports.ELECTRICITY_FACTOR_BY_YEAR = ELECTRICITY_FACTOR_BY_YEAR;
+module.exports.electricityFactor = electricityFactor;
