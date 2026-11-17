@@ -17,8 +17,71 @@ app.use(express.json({ limit: "50mb" }));
 auth.ensureAdmin();
 
 // ---- authentication: everything except the login page requires a session ----
-const PUBLIC = new Set(["/login.html", "/style.css", "/api/login"]);
+const PUBLIC = new Set(["/login.html", "/style.css", "/api/login", "/api/public/results"]);
 app.post("/api/login", auth.login);
+
+// ---- PUBLIC aggregate results feed for www.ioi.ngo (no login, no personal data) ----
+// Only years ticked in Admin -> "Public website feed" are included. Aggregates only.
+const PUBLIC_ORIGIN_OK = (o) => !!o && (
+  (process.env.PUBLIC_ORIGINS || "https://www.ioi.ngo,https://ioi.ngo").split(",").map((x) => x.trim()).includes(o) ||
+  /^https:\/\/[a-z0-9-]+\.(lovable\.app|lovableproject\.com)$/i.test(o));
+const PUBLISHED_KPI = { 2024: { excl: 0.0350, incl: 0.0356 }, 2025: { excl: 0.0314, incl: 0.0402 } }; // as published in the reports
+const PASSIVE_DEFAULT = { 2025: { tCO2e: 723, date: null } };  // credits retired for the year (entered in Admin; 2025 is the published figure)
+const PASSIVE_CUMULATIVE_THROUGH_2025 = 2766;                  // published cumulative 2019-2025
+const SCOPE1_SUBTYPES = ["gas", "vehicle_car", "vehicle_pickup"];  // + staff flights
+function liveExtras(full, y, r) {
+  const d = filterByYear(full, y), sumE = (f) => d.groundStaffEntries.filter(f).reduce((a, e) => a + (e.emissionsTonsCO2e || 0), 0);
+  const n = (type) => d.nights.filter((x) => x.accommodationType === type).reduce((a, x) => a + (x.nights || 0), 0);
+  const regen = d.groundStaffEntries.filter((e) => e.category === "mitigation" && e.subtype === "regenerative_ag").map((e) => Number(e.amount) || 0);
+  const s1 = (r.totals.staffFlights || 0) + sumE((e) => e.category === "utility" && SCOPE1_SUBTYPES.includes(e.subtype));
+  const s2 = sumE((e) => e.category === "utility" && /^electricity_/.test(e.subtype));
+  return { scope1: calc.round(s1), scope2: calc.round(s2), scope3: calc.round(r.totals.grossTonsCO2e - s1 - s2),
+    hotelNights: n("hotel"), homestayNights: n("homestay"), volunteerHouseNights: n("volunteer_house"), regenerativeHectares: regen.length ? Math.max(...regen) : null };
+}
+const PUBLISHED_SCOPES = { 2024: [0.69, 4.71, 685.21], 2025: [11.95, 5.09, 820.68] }; // as published
+function publicResults() {
+  const full = loadData();
+  const years = (full.settings && full.settings.publicYears) || [2024, 2025];
+  const out = [];
+  const passive = { ...PASSIVE_DEFAULT, ...((full.settings && full.settings.passiveCredits) || {}) };
+  for (const y of full._years.filter((x) => years.includes(x))) {
+    const r = reportForYear(full, y), t = r.totals, w = r.participantWeeks, fin = !!r.finalized;
+    const H = HISTORICAL[y], X = H ? null : liveExtras(full, y, r);
+    const people = fin ? w.participants : Object.values(r.byCategory).reduce((a, c) => a + c.people, 0);
+    const gross = t.grossTonsCO2e;
+    out.push({
+      year: y, status: fin ? "final" : "in_progress", asOf: fin ? null : new Date().toISOString().slice(0, 10),
+      participants: people, participantWeeks: w.total, avgProgramWeeks: people ? calc.round(w.total / people) : null,
+      grossTCO2e: gross, scope1: PUBLISHED_SCOPES[y] ? PUBLISHED_SCOPES[y][0] : X.scope1, scope2: PUBLISHED_SCOPES[y] ? PUBLISHED_SCOPES[y][1] : X.scope2, scope3: PUBLISHED_SCOPES[y] ? PUBLISHED_SCOPES[y][2] : X.scope3,
+      activeOffsettingTCO2e: t.mitigationTonsCO2e, netTCO2e: t.netAfterMitigationTonsCO2e,
+      grossPerParticipantWeek: w.grossPerWeek,
+      controllablePerWeekPublished: PUBLISHED_KPI[y] ? PUBLISHED_KPI[y].excl : (w.total ? calc.round((gross - t.flights) / w.total) : null),
+      controllablePerWeekInclStaffFlights: PUBLISHED_KPI[y] ? PUBLISHED_KPI[y].incl : w.controllablePerWeek,
+      participantFlightsTCO2e: t.participantFlights, participantFlightShare: gross ? calc.round(t.participantFlights / gross) : null,
+      allFlightsShare: gross ? calc.round(t.flights / gross) : null,
+      regenerativeHectares: H ? calc.round(H.regenHectares) : X.regenerativeHectares,
+      hotelNights: H ? (H.nights.homestay != null ? H.nights.hotel : null) : X.hotelNights, homestayNights: H ? H.nights.homestay : X.homestayNights,
+      totalNights: H ? (H.nights.homestay != null ? null : H.nights.hotel) : null, // 2024 used a single accommodation rate
+      volunteerHouseNights: H ? null : X.volunteerHouseNights,
+      passiveCreditsRetiredTCO2e: passive[y] ? passive[y].tCO2e : null, passiveCreditsCertificateDate: passive[y] ? passive[y].date || null : null,
+      electricityFactorKgPerKwh: require("./data/factors").electricityFactor(y),
+      reportUrl: fin ? `/reports/IOI-GHG-Report-${y}.pdf` : null,
+    });
+  }
+  const later = Object.entries(passive).filter(([yy]) => Number(yy) > 2025).reduce((a, [, v]) => a + (Number(v.tCO2e) || 0), 0);
+  return { schemaVersion: 1, organization: "Intercultural Outreach Initiative", generatedAt: new Date().toISOString(), years: out,
+    cumulative: { passiveCreditsRetired2019toLatestTCO2e: PASSIVE_CUMULATIVE_THROUGH_2025 + later } };
+}
+app.options("/api/public/results", (req, res) => {
+  if (PUBLIC_ORIGIN_OK(req.headers.origin)) { res.set("Access-Control-Allow-Origin", req.headers.origin); res.set("Vary", "Origin"); }
+  res.set("Access-Control-Allow-Methods", "GET"); res.sendStatus(204);
+});
+app.get("/api/public/results", (req, res) => {
+  if (PUBLIC_ORIGIN_OK(req.headers.origin)) { res.set("Access-Control-Allow-Origin", req.headers.origin); res.set("Vary", "Origin"); }
+  res.set("Cache-Control", "public, max-age=300");
+  res.json(publicResults());
+});
+
 app.use((req, res, next) => {
   if (PUBLIC.has(req.path)) return next();
   const user = auth.currentUser(req);
@@ -268,6 +331,23 @@ app.put("/api/admin/settings", adminOnly, (req, res) => {
   }
   store.write(d);
   res.json({ ok: true });
+});
+
+
+// credits retired per year (entered after the year closes)
+app.get("/api/admin/passive-credits", adminOnly, (req, res) => { const d = readData(); res.json({ ...PASSIVE_DEFAULT, ...((d.settings && d.settings.passiveCredits) || {}) }); });
+app.put("/api/admin/passive-credits", adminOnly, (req, res) => {
+  const y = Number(req.body.year), t = Number(req.body.tCO2e);
+  if (!(y > 2000 && y < 2100) || !(t >= 0)) return res.status(400).json({ error: "Enter a year and the tCO2e retired." });
+  const d = readData(); d.settings.passiveCredits = { ...(d.settings.passiveCredits || {}), [y]: { tCO2e: t, date: req.body.date || null } };
+  store.write(d); res.json({ ok: true });
+});
+// which years the public website feed shows
+app.get("/api/admin/public-years", adminOnly, (req, res) => { const d = readData(); res.json({ years: (d.settings && d.settings.publicYears) || [2024, 2025], available: loadData()._years }); });
+app.put("/api/admin/public-years", adminOnly, (req, res) => {
+  const d = readData();
+  d.settings.publicYears = [...new Set((req.body.years || []).map(Number).filter((n) => n > 2000 && n < 2100))].sort();
+  store.write(d); res.json({ ok: true, years: d.settings.publicYears });
 });
 
 // ---- participants: manual add (backup to Embark), edit, delete ----

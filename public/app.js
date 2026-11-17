@@ -646,3 +646,25 @@ async function loadCompare() {
       <td>${r.controllablePerWeek != null ? fmt(r.controllablePerWeek) : "—"}${p && p.controllablePerWeek ? pct(r.controllablePerWeek, p.controllablePerWeek) : ""}</td>
       <td>${fmt(r.mitigation)}</td><td>${fmt(r.net)}</td><td>${r.electricityFactor}${r.electricityFactor !== rows[0].electricityFactor ? "*" : ""}</td></tr>`; }).join("") + `</table><p class="hint">“final” = published report figures (2024, 2025); “live” = calculated by this tool from entered data. Controllable = gross minus participant flights (the 2026 definition) for every year, so years are comparable. * Electricity uses a new national grid factor from 2026 (0.9866 kg CO₂e/kWh, CENACE / Ministerio del Ambiente) instead of 0.32 in earlier years, so electricity emissions, and anything derived from them (homestay and volunteer-house rates), are not directly comparable with 2024–2025. As published for 2024–2025 (excluding ALL flights): ${rows.filter((r) => r.finalized).map((r) => `${r.year}: ${r.controllableExAllFlightsPerWeek} t/week`).join(", ")}.</p>`;
 }
+
+
+async function loadPublicFeed() {
+  try {
+    const r = await api("/api/admin/public-years");
+    document.getElementById("pub-url").textContent = location.origin + "/api/public/results";
+    document.getElementById("pub-years").innerHTML = r.available.map((y) => `<label><input type="checkbox" class="pub-y" value="${y}" ${r.years.includes(y) ? "checked" : ""}> ${y}</label>`).join(" ");
+  } catch (e) { /* not admin */ }
+}
+document.getElementById("pub-save")?.addEventListener("click", async () => {
+  const years = [...document.querySelectorAll(".pub-y:checked")].map((c) => Number(c.value));
+  await api("/api/admin/public-years", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ years }) });
+  document.getElementById("pub-msg").textContent = "Saved.";
+});
+loadPublicFeed();
+
+document.getElementById("pc-save")?.addEventListener("click", async () => {
+  try {
+    await api("/api/admin/passive-credits", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ year: document.getElementById("pc-year").value, tCO2e: document.getElementById("pc-t").value, date: document.getElementById("pc-date").value }) });
+    document.getElementById("pc-msg").textContent = "Saved.";
+  } catch (e) { document.getElementById("pc-msg").textContent = e.message; }
+});
